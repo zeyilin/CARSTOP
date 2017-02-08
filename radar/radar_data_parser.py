@@ -1,5 +1,5 @@
 from multiprocessing import Process
-from util.logger_conf import configure_logs
+#from util.logger_conf import configure_logs
 import time, sys, logging, json, canlib, random, copy
 
 idBase = 1279
@@ -22,7 +22,7 @@ class RadarDataParser(Process):
     def run(self):
         """ Start reading data from the CAN Bus and sending full objects to the dispatcher. """
         configure_logs(getattr(logging, self.log_level, None))
-        self.logger = logging.getLogger('debug_radar')
+        # self.logger = logging.getLogger('debug_radar')
         # These are logging properly on Bryce's machinekk:w
         # self.logger.info( "welcome to the debug_radar logger!")
         # logging.getLogger('radar').info("this is a dummy message")
@@ -153,9 +153,9 @@ class RadarDataParser(Process):
                             if (msgId == 1512):
                                 # self.callback(copy.deepcopy(self.data))
                                 self.callback(self.data)
-                                if self.log:
+                                #if self.log:
                                     # sends JSON data to radar log file
-                                    logging.getLogger('radar').info(json.dumps(self.data))
+                                    #logging.getLogger('radar').info(json.dumps(self.data))
 
                                 self.data = {} # Start with a fresh object
             except (canlib.canNoMsg) as ex:
