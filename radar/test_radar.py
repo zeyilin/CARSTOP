@@ -237,8 +237,8 @@ if __name__ == '__main__':
     GFM = RadarGFM()
     
     with  BasicLog("basic_details.txt") as basiclog ,\
-          open("radar_preGFM.csv", 'w') as logfile_pre ,\
-          open("radar_postGFM.csv", 'w') as logfile_post ,\
+          open("radar_preGFM.txt", 'w') as logfile_pre ,\
+          open("radar_postGFM.txt", 'w') as logfile_post ,\
           ProcessProtector(radarInterface):
         logfile_pre.write('time,track,range,angle,rangerate,latrate,power')
         logfile_post.write('time,range,angle')
