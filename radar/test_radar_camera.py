@@ -248,7 +248,7 @@ if __name__ == '__main__':
         radarStartTime = time.time()
         radarInterface.start(radarStartTime)
         basiclog.start(radarStartTime)
-        assert radarInterface.is_alive()
+        #assert radarInterface.is_alive()
             
         while True:
             time.sleep(1./FPS - estimated_delay)
