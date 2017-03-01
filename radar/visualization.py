@@ -27,7 +27,7 @@ while 1:
         theta = data_slice['angle'] * pi/ 180 + pi/2
         area = data_slice['power'] * 5
         colors = data_slice['track']
-        x = r * np.cos(theta)
+        x = -r * np.cos(theta)
         y = r * np.sin(theta)
         plt.title("Current Time %f." % (stride_size * cur_stride))
         plt.axis([-50, 50, 0, 50])
