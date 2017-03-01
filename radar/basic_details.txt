@@ -1,2 +1,3 @@
-
- end = Wed Feb 22 14:11:37 2017, 211 ms<traceback object at 0x0000000006F21408>
+start = Wed Feb 22 15:09:02 2017, 279 ms
+ end = Wed Feb 22 15:09:07 2017, 369 ms
+ natural exit
