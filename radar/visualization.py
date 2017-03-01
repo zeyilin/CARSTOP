@@ -5,7 +5,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from math import pi
-data = np.genfromtxt('C:\\Users\\adees\\Google Drive\\Classes\\_Senior Design\\Raw Data\\CARSTOP_TEST_FEB26\\RADAR & DSRC\\radar_preGFM_B2.txt', delimiter=',', names=True, usecols = (0, 1, 2, 3, 6))
+#data = np.genfromtxt('C:\\Users\\adees\\Google Drive\\Classes\\_Senior Design\\Raw Data\\CARSTOP_TEST_FEB26\\RADAR & DSRC\\radar_preGFM_B2.txt', delimiter=',', names=True, usecols = (0, 1, 2, 3, 6))
+#data = np.genfromtxt('C:\Users\Steven\Documents\Senior Year\Senior Design\CARSTOP2\\radar\RADAR_FEB26_DATA\\radar_preGFM_B2.txt', delimiter=',', names=True, usecols = (0, 1, 2, 3, 6))
 pandata = pd.DataFrame(data, columns=['time', 'track', 'range', 'angle', 'power'])
 index = 0
 stride_size = .1
