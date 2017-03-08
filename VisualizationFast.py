@@ -3,9 +3,16 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import pandas as pd
 from math import pi
+import sys, os
 
+filePath = None
+if len(sys.argv) > 1:
+    # Assume first arg is location of data from current path
+    curPath = os.getcwd() + '/'
+    filePath = curPath + sys.argv[1]
 
 #reading data for the graphing into a data element
+data = np.genfromtxt(filePath, delimiter=',', names=True, usecols = (0, 1, 2, 3, 6))
 #data = np.genfromtxt('C:\\Users\\adees\\Google Drive\\Classes\\_Senior Design\\Raw Data\\CARSTOP_TEST_FEB26\\RADAR & DSRC\\radar_preGFM_B3.txt', delimiter=',', names=True, usecols = (0, 1, 2, 3, 6))
 #data = np.genfromtxt('C:\Users\Steven\Documents\Senior Year\Senior Design\CARSTOP2\\radar\RADAR_FEB26_DATA\\radar_preGFM_B2.txt', delimiter=',', names=True, usecols = (0, 1, 2, 3, 6))
 pandata = pd.DataFrame(data, columns=['time', 'track', 'range', 'angle', 'power'])
@@ -54,6 +61,6 @@ def update(i, pathcol):
     return [pathcol] + [time_text]
 
 anim = animation.FuncAnimation(
-    fig, update, init_func=init, fargs=(pathcol,), interval= (200*stride_size),
+    fig, update, init_func=init, fargs=(pathcol,), interval= (400*stride_size),
     blit=True, repeat=True)
 plt.show()
