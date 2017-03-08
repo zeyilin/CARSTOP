@@ -1,3 +1,0 @@
-start = Wed Feb 22 15:09:02 2017, 279 ms
- end = Wed Feb 22 15:09:07 2017, 369 ms
- natural exit
