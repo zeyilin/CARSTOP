@@ -12,9 +12,10 @@ import numpy as np
 from radar_GFM import RadarGFM
 import cv2
 import matplotlib
-matplotlib.use("Agg")
+#matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.animation as manimation
+import Visualization_RealTime as FVis
 from sys import platform
 
 FPS = 5
@@ -134,7 +135,7 @@ def array2str(array):
 """
 Saves video files using matplotlib - this is much slower than
 OpenCV's video code, but is the only code that currently works on Windows.
-"""
+
 class MPL_VideoWriter():
     def __init__(self, filename, cam_res, fps):
         figwidth = 10 # inches, must be a factor of frame width and height
@@ -155,7 +156,9 @@ class MPL_VideoWriter():
     def write(self, image):
         self.aplt.set_data(image[:,:,::-1])
         self.writer.grab_frame()
-       
+"""
+
+
 """ Saves video files using OpenCV """
 class OCV_VideoWriter():
     def __init__(self, filename, cam_res, fps):
@@ -233,9 +236,12 @@ class ProcessProtector():
         
 if __name__ == '__main__':
     radarQueue = Queue()
-    radarInterface = RadarParser(radarQueue)
+
+    visQueue = Queue()
+    radarInterface = RadarParser(visQueue)
     GFM = RadarGFM()
-    
+    p = Process(target=FVis.pipeline_radar, args=(visQueue,))
+    p.start()
     with  BasicLog("basic_details.txt") as basiclog ,\
           open("radar_preGFM.txt", 'w') as logfile_pre ,\
           open("radar_postGFM.txt", 'w') as logfile_post ,\
@@ -268,4 +274,4 @@ if __name__ == '__main__':
             dt3 = t3 - t2
             #videowriter.write(frame)
             dt4 = time.time() - t3
-            print "times {:.3f}, {:.3f}, {:.3f}, {:.3f}".format(dt1,dt2,dt3,dt4)
+            #print "times {:.3f}, {:.3f}, {:.3f}, {:.3f}".format(dt1,dt2,dt3,dt4)
