@@ -12,7 +12,6 @@ index = 0
 stride_size = .1
 pathcol = ''
 def pipeline_radar(radarQueue):
-    print "HERE I AM"
     #initializing our figure
     fig = plt.figure()
     ax = plt.axes(xlim=(-10, 10), ylim=(0, 20))
@@ -68,9 +67,9 @@ def update(i, pathcol, radarQueue ):
             x.append(-r[index] * np.cos(theta[index]))
             y.append(r[index] * np.sin(theta[index]))
             index = index + 1
-    print "X offsets to be printed: " + str(x)
-    print "Y offsets to be printed" + str(y)
-    print "Sizes of the objects" + str(area)
+    #print "X offsets to be printed: " + str(x)
+    #print "Y offsets to be printed" + str(y)
+    #print "Sizes of the objects" + str(area)
     pathcol.set_offsets(np.vstack((x, y)).T)
     plt.title("Current Time %f." % (stride_size * i))
     pathcol.set_sizes(area)
