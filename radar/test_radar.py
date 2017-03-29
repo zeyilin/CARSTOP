@@ -15,7 +15,7 @@ import matplotlib
 #matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.animation as manimation
-import VisualizationFast as FVis
+import Visualization_RealTime as FVis
 from sys import platform
 
 FPS = 5
