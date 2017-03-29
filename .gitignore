@@ -2,3 +2,16 @@
 *.DS_Store
 *.idea
 *.ipynb_checkpoints/
+vision/darknet/backup
+vision/darknet/data
+vision/darknet/LICENSE
+vision/darknet/obj
+vision/darknet/README.md
+vision/darknet/scripts
+vision/darknet/yolo.weights
+vision/darknet/cfg
+vision/darknet/darknet
+vision/darknet/.gitignore
+vision/darknet/Makefile
+vision/darknet/predictions.jpg
+vision/darknet/results
