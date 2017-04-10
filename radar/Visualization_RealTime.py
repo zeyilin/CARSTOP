@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from sklearn.cluster import DBSCAN
+import pandas as pd
 from math import pi
 import matplotlib
 from multiprocessing import Queue
@@ -70,6 +72,13 @@ def update(i, pathcol, radarQueue ):
     #print "X offsets to be printed: " + str(x)
     #print "Y offsets to be printed" + str(y)
     #print "Sizes of the objects" + str(area)
+    temp = pd.DataFrame()
+    temp['x'] = x
+    temp['y'] = y
+    if len(temp)>0:
+        filtered = DBSCAN(eps=3,min_samples=5).fit_predict(temp)
+    else:
+        filtered= []
     pathcol.set_offsets(np.vstack((x, y)).T)
     plt.title("Current Time %f." % (stride_size * i))
     pathcol.set_sizes(area)
