@@ -380,7 +380,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 		                printf("Err on ack\n");
 		                commStop(0);
 	                }
-                } else {
+                }
+		else if(sendFUSION){
+		
+		} 
+		else {
                 // ---
                 show_image(disp, vidname);
                 int c = cvWaitKey(1);

@@ -313,12 +313,12 @@ bool* filter_classes(char **names, int classes){
 //  ---
 
 typedef struct{
-    char EOT;    // 1 for End of Transmission, 0 for Still Transmitting
+    int EOT;    // 1 for End of Transmission, 0 for Still Transmitting
     int x;
     int y;
     int h;
     int w;
-    char class;
+    int class;
     float prob;
 } obj_packet;
 
@@ -330,8 +330,6 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
     obj_packet packet;
     packet.EOT = 0;
 
-    printf("In draw detection function\n Socket ID is: %d\n ", sockfd );
-    
     // --- setting up for search below
     /*
     int j, class;
@@ -361,7 +359,6 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             if ((sockfd >= 0) && sendFUSION){
                 
                 //fill obj_packet
-                printf("inside the fusion land\n");
 		packet.x = (b.x-b.w/2.)*im.w;
                 packet.y = (b.y-b.h/2.)*im.h;
                 packet.w = b.w*im.w;
@@ -381,7 +378,6 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 
                 //orig
                 int width = im.h * .012;
-		        printf("In the old regulard overlay code\n");
 
                 if(0){
                     width = pow(prob, 1./2.)*10+1;
@@ -427,7 +423,6 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             printf("sending failed\n");
             commStop(0);
         }
-        printf("End of detection boxes transmission... len(obj_packet)=%d", sendlen);
     }
 }
 

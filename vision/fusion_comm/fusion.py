@@ -7,10 +7,22 @@ DESTPORT = 9002
 
 import cv2, connectors, time
 from io import BytesIO
-import numpy as np
-import binascii
 from struct import unpack
 
+class Detected_Object():
+    def __init__(self, packet):
+        (self.x, self.y, self.h, self.w, classification, self.prob) = unpack('iiiiif', packet[4:])
+        if(classification == 0):
+            self.classification = 'pedestrian'
+        elif(classification == 1):
+            self.classification = 'bicycle'
+        elif(classification == 52):
+            self.classification = 'hotdog'
+        elif(classification == 2 or classification == 3 or classification == 5 or classification == 7):
+            self.classification = 'motorvehicle'
+        else:
+            self.classifcation = 'unknown'
+        
 class Camera():
     def __init__(self, capnum):
         self.cap = cv2.VideoCapture(capnum)
@@ -30,44 +42,45 @@ class Camera():
     def __exit__(self, errtype, errval, traceback):
         self.cap.release()
 
-def main():    
-    cam = Camera(0)
+def get_packet(tx):
+    while(True):
+        try:
+            packet = tx.recv(28)
+            return packet
+        except Exception as e:
+            pass
 
-    tx = connectors.TxConnector(IP, DESTPORT, 'TCP')
+def get_detected_objects_packets(tx):
+    objects = []
+    packet = get_packet(tx)
+    eof, = unpack('i', packet[0:4])
 
-    count = 0
-    time.sleep(.1)
-    firsttime = time.time()
+    while(len(packet) == 28 and eof == 0):
+        objects.append(Detected_Object(packet))
+        packet = get_packet(tx)
+        eof, = unpack('i', packet[0:4])
 
-    with tx, cam:
-        while True:
-            frame = cam.read()
-            cv2.imshow('Frame', frame)
-            continue
+    return objects
 
-            msgtime = time.time()
-            
-            io_obj = BytesIO(frame.flatten())
-            tx.send(io_obj.getvalue())
-            tx.ack()
-            io_obj.close()
-            time.sleep(.05)
-                
-            gap = time.time() - msgtime
-            if print_timing:
-                print "{:.2f}".format(msgtime - firsttime)
-                print "runtime {:.3f}".format(gap)
+def draw_detected_objects(frame, objects):
+    for obj in objects:
+        if(obj.classification == 'pedestrian'):
+            cv2.rectangle(frame, (obj.x, obj.y), (obj.x+obj.w, obj.y+obj.h), (0, 0, 204), 2)
+        elif(obj.classification == 'bicycle'):
+            cv2.rectangle(frame, (obj.x, obj.y), (obj.x+obj.w, obj.y+obj.h), (204,0, 0), 2)
+        elif(obj.classification == 'hotdog'):
+            cv2.rectangle(frame, (obj.x, obj.y), (obj.x+obj.w, obj.y+obj.h), (102, 0, 255), 2)
+        elif(obj.classification == 'motorvehicle'):
+            cv2.rectangle(frame, (obj.x, obj.y), (obj.x+obj.w, obj.y+obj.h), (204,0, 153), 2)
+        else:
+            #unknown classification
+            cv2.rectangle(frame, (obj.x, obj.y), (obj.x+obj.w, obj.y+obj.h), (0,204, 0), 2)
 
 def test_stream():
     cam = Camera(0)
 
-    count = 0
-    time.sleep(.1)
-    firsttime = time.time()
-
     with cam:
         while True:
-            print('hello')
             frame = cam.read()
             cv2.imshow('frame', frame)
             cv2.waitKey(1)
@@ -81,33 +94,9 @@ def test_send():
         while True:
             frame = cam.read()
             io_obj = BytesIO(frame.flatten())
-            t = time.time()
             tx.send(io_obj.getvalue())
-            print('Round trip time = {}'.format(time.time()-t))
             io_obj.close()
             time.sleep(.05)
-
-def get_packet(tx):
-    while(True):
-        try:
-            packet = tx.recv(28)
-            print("Received packet: {}".format(binascii.b2a_hex(packet)))
-            print("Received packet of length: {}".format(len(packet)))
-            return packet
-        except Exception as e:
-            pass
-
-def get_detected_objects_packets(tx):
-    data = ''
-    packet = binascii.b2a_hex(get_packet(tx))
-
-    while(len(packet) > 0 and packet[0:2] == '00'):
-        data += packet
-        packet = binascii.b2a_hex(get_packet(tx))
-
-    print('Received data of length: {}'.format(len(data)))
-    print('Data contents in hex: {}'.format(data))
-    return data
 
 def test_sendrecv():
     cam = Camera(0)
@@ -129,36 +118,13 @@ def test_sendrecv():
             tx.send(io_obj.getvalue())
             io_obj.close()
 
-            packets = get_detected_objects_packets(tx)
-
-
+            objects = get_detected_objects_packets(tx)
+            draw_detected_objects(frame, objects)
+            print('Detected {} Objects'.format(len(objects)))
+            cv2.imshow('frame', frame)
+            cv2.waitKey(1)
             time.sleep(.05)
                 
 
 if __name__ == '__main__':
     test_sendrecv()
-
-
-#capture image
-	# testmmwv_to_darknet.py
-
-
-#send image to darkent
-	# testmmwv_to_darknet.py
-
-
-
-#receive image in darknet
-	# recvmmwv = 1 in darknet
-
-
-
-#send detected objects from darknet
-	# senddsrc = 1 in darknet
-
-#receive detected objects
-	# TODO make a receiving script
-
-#output detected objects
-	# TODO make an outputting script
-
