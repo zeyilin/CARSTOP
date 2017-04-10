@@ -3,7 +3,7 @@
 
 # In[ ]:
 
-get_ipython().magic('matplotlib notebook')
+#get_ipython().magic('matplotlib notebook')
 import numpy as np
 import pandas as pd
 from math import pi
