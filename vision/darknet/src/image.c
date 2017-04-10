@@ -20,9 +20,11 @@
 #include <unistd.h>
 // new socket thing ^
 
-extern int sockfd;
-extern int sendFUSION;
+//new ---
+#define FUSION 1
 
+extern int sockfd;
+// ---
 
 int windows = 0;
 
@@ -356,7 +358,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             box b = boxes[i];
 
             //send info to dsrc
-            if ((sockfd >= 0) && sendFUSION){
+            if ((sockfd >= 0) && FUSION){
                 
                 //fill obj_packet
 		packet.x = (b.x-b.w/2.)*im.w;
@@ -416,7 +418,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
         }
     }
 
-    if((sockfd >= 0) && sendFUSION) {
+    if((sockfd >= 0) && FUSION) {
         packet.EOT = 1;
         sendlen = write(sockfd, &packet, sizeof(obj_packet));
         if(sendlen < sizeof(obj_packet)){
