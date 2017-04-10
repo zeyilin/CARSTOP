@@ -5,6 +5,33 @@ last mod 3/14/17
 """
 import socket, time, select
 
+class ClientConnector():
+    def __init__(self, ip, port, protocol = 'TCP'):
+        assert protocol in ('TCP','UDP'), "protocol = 'TCP' or 'UDP'"
+        self.protocol = protocol
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print("Tx connecting...")
+        self.s.connect((ip, port))
+        print("Tx connected")
+        self.exitmessage = None
+    
+    def recv(self, size, maxwaittime = 0.1):
+        return self.s.recv(size)
+  
+    def send(self, msg):
+        self.s.sendall(msg)
+        
+    def setExitMessage(self, msg):
+        self.exitmessage = msg
+
+    def __enter__(self):
+        return self
+    def __exit__(self, errtype, errval, traceback):
+        if self.exitmessage:
+            self.send(self.exitmessage)
+            time.sleep(.1)
+        self.s.close()
+    
 class RxConnector():
     def __init__(self, port, protocol='TCP'):
         assert protocol in ('TCP','UDP'), "protocol = 'TCP' or 'UDP'"

@@ -7,7 +7,8 @@ communicate = False # only set to False for testing camera
 print_timing = True
 cam_res = (1280,720)
 fps = 10 # frames per second
-IP = '' #'192.168.0.138' #
+IP = '127.0.0.1' #'192.168.0.138' #
+PORT = 9002
 
 import cv2, connectors, time
 from io import BytesIO
@@ -36,7 +37,7 @@ cam = Camera(0)
 
 # start up socket
 if communicate:
-    PORT = int(raw_input("type the port number: "))
+    # PORT = int(raw_input("type the port number: "))
     tx = connectors.TxConnector(IP, PORT, 'TCP')
 else:
     tx = connectors.NullConnector()

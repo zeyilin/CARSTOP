@@ -12,9 +12,16 @@
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
-#include "opencv2/videoio/videoio_c.h"
 #include "opencv2/imgproc/imgproc_c.h"
+#include "opencv2/videoio/videoio_c.h"
 #endif
+
+#include <sys/socket.h>
+#include <unistd.h>
+// new socket thing ^
+
+extern int sockfd;
+extern int sendFUSION;
 
 
 int windows = 0;
@@ -105,6 +112,103 @@ void draw_label(image a, int r, int c, image label, const float *rgb)
     }
 }
 
+
+void draw_arrow(image a, char lr, char ucb, float r, float g, float b)
+{
+    int i, j;
+    int vsize = a.h / 10; // half the hypotenuse of the arrow
+    int hstart = a.w * .05; // distance from closest arrow point to edge of image
+    int vstart;
+    int npixels = a.w*a.h;
+    int pix;
+    r = r/2; // half shade the triangle
+    g = g/2;
+    b = b/2;
+
+    if (lr=='L' && (ucb=='C')){
+        for(i = vsize*4; i < vsize*5; ++i){
+            for(j = hstart + vsize*5 - i; j < hstart + vsize; ++j){
+                pix = j + i*a.w;
+                a.data[pix] = a.data[pix]/2 + r;
+                a.data[pix + npixels] = a.data[pix + npixels]/2 + g;
+                a.data[pix + 2*npixels] = a.data[pix + 2*npixels]/2 + b;
+            }
+        }
+        for(i = vsize*5; i < vsize*6; ++i){
+            for(j = hstart - vsize*5 + i; j < hstart + vsize; ++j){
+                pix = j + i*a.w;
+                a.data[pix] = a.data[pix]/2 + r;
+                a.data[pix + npixels] = a.data[pix + npixels]/2 + g;
+                a.data[pix + 2*npixels] = a.data[pix + 2*npixels]/2 + b;
+            }
+        }
+    } else if ((lr=='R') && (ucb=='C')){
+        hstart = a.w - hstart;
+        for(i = vsize*4; i < vsize*5; ++i){
+            for(j = hstart - vsize; j < hstart - vsize*5 + i; ++j){
+                pix = j + i*a.w;
+                a.data[pix] = a.data[pix]/2 + r;
+                a.data[pix + npixels] = a.data[pix + npixels]/2 + g;
+                a.data[pix + 2*npixels] = a.data[pix + 2*npixels]/2 + b;
+            }
+        }
+        for(i = vsize*5; i < vsize*6; ++i){
+            for(j = hstart - vsize; j < hstart + vsize*5 - i; ++j){
+                pix = j + i*a.w;
+                a.data[pix] = a.data[pix]/2 + r;
+                a.data[pix + npixels] = a.data[pix + npixels]/2 + g;
+                a.data[pix + 2*npixels] = a.data[pix + 2*npixels]/2 + b;
+            }
+        }
+    } else if ((lr=='L') && (ucb=='U')){
+        vsize = vsize * 1.414;
+        for(i = hstart; i < hstart + vsize; ++i){
+            for(j = hstart; j < hstart*2 + vsize - i; ++j){
+                pix = j + i*a.w;
+                a.data[pix] = a.data[pix]/2 + r;
+                a.data[pix + npixels] = a.data[pix + npixels]/2 + g;
+                a.data[pix + 2*npixels] = a.data[pix + 2*npixels]/2 + b;
+            }
+        }
+    } else if ((lr=='R') && (ucb=='U')){
+        vstart = hstart;
+        hstart = a.w - hstart;
+        vsize = vsize * 1.414;
+        for(i = vstart; i < vstart + vsize; ++i){
+            for(j = hstart-vstart-vsize+i; j < hstart; ++j){
+                pix = j + i*a.w;
+                a.data[pix] = a.data[pix]/2 + r;
+                a.data[pix + npixels] = a.data[pix + npixels]/2 + g;
+                a.data[pix + 2*npixels] = a.data[pix + 2*npixels]/2 + b;
+            }
+        }
+   } else if ((lr=='L') && (ucb=='B')){
+        vstart = a.h - hstart;
+        vsize = vsize * 1.414;
+        for(i = vstart - vsize; i < vstart; ++i){
+            for(j = hstart; j < hstart + i - vstart + vsize; ++j){
+                pix = j + i*a.w;
+                a.data[pix] = a.data[pix]/2 + r;
+                a.data[pix + npixels] = a.data[pix + npixels]/2 + g;
+                a.data[pix + 2*npixels] = a.data[pix + 2*npixels]/2 + b;
+            }
+        }
+   } else if ((lr=='R') && (ucb=='B')){
+        vstart = a.h - hstart;
+        hstart = a.w - hstart;
+        vsize = vsize * 1.414;
+        for(i = vstart - vsize; i < vstart; ++i){
+            for(j = hstart-i + vstart-vsize; j < hstart; ++j){
+                pix = j + i*a.w;
+                a.data[pix] = a.data[pix]/2 + r;
+                a.data[pix + npixels] = a.data[pix + npixels]/2 + g;
+                a.data[pix + 2*npixels] = a.data[pix + 2*npixels]/2 + b;
+            }
+        }
+   }
+}
+
+
 void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b)
 {
     //normalize_image(a);
@@ -191,52 +295,139 @@ int check_class(int class, char **names)
     return 0;
 }
 
+// --- so as to only include the classes we want
+/*
+bool* filter_classes(char **names, int classes){
+    bool include[classes];
+    int i;
+    int j = 0;
+    for (i = 0; i < classes; ++i){
+        if( (strcmp(names[i], "person")==0) || 
+            (strcmp(names[i], "car")==0) ){
+            include[j] = i;
+            j++;
+        }
+    }
+    return include;
+}*/
+//  ---
+
+typedef struct{
+    char EOT;    // 1 for End of Transmission, 0 for Still Transmitting
+    int x;
+    int y;
+    int h;
+    int w;
+    char class;
+    float prob;
+} obj_packet;
+
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)
 {
     int i;
+    int sendlen;
+    int detect_count = 0;
+    obj_packet packet;
+    packet.EOT = 0;
+
+    printf("In draw detection function\n Socket ID is: %d\n ", sockfd );
+    
+    // --- setting up for search below
+    /*
+    int j, class;
+    float prob;
+    bool **included_classes = filter_classes(names, classes);
+    */ // ---
 
     for(i = 0; i < num; ++i){
         int class = max_index(probs[i], classes);
         float prob = probs[i][class];
+        // --- search for best of allowed classes
+        /*
+        prob = 0;
+        class = 0;
+        for(j = 1; j < classes; ++j){
+            if(included_classes[j] && (probs[i][j] > prob)){
+                prob = probs[i][j];
+                class = j;
+            }
+        }*/ // ---
+
         if(prob > thresh && check_class(class, names)){
 
-            int width = im.h * .012;
-
-            if(0){
-                width = pow(prob, 1./2.)*10+1;
-                alphabet = 0;
-            }
-
-            printf("%s: %.0f%%\n", names[class], prob*100);
-            int offset = class*123457 % classes;
-            float red = get_color(2,offset,classes);
-            float green = get_color(1,offset,classes);
-            float blue = get_color(0,offset,classes);
-            float rgb[3];
-
-            //width = prob*20+2;
-
-            rgb[0] = red;
-            rgb[1] = green;
-            rgb[2] = blue;
             box b = boxes[i];
 
-            int left  = (b.x-b.w/2.)*im.w;
-            int right = (b.x+b.w/2.)*im.w;
-            int top   = (b.y-b.h/2.)*im.h;
-            int bot   = (b.y+b.h/2.)*im.h;
+            //send info to dsrc
+            if ((sockfd >= 0) && sendFUSION){
+                
+                //fill obj_packet
+                printf("inside the fusion land\n");
+		packet.x = (b.x-b.w/2.)*im.w;
+                packet.y = (b.y-b.h/2.)*im.h;
+                packet.w = b.w*im.w;
+                packet.h = b.h*im.h;
+                packet.class = (char)class;
+                packet.prob = prob;
+                sendlen = write(sockfd, &packet, sizeof(obj_packet));
+                if(sendlen < sizeof(obj_packet)){
+                    printf("sending failed\n");
+                    commStop(0);
+                }
+		printf("Sent detected object %d\n", detect_count);
+		detect_count+=1;
+            }
 
-            if(left < 0) left = 0;
-            if(right > im.w-1) right = im.w-1;
-            if(top < 0) top = 0;
-            if(bot > im.h-1) bot = im.h-1;
+            else{
 
-            draw_box_width(im, left, top, right, bot, width, red, green, blue);
-            if (alphabet) {
-                image label = get_label(alphabet, names[class], (im.h*.03)/10);
-                draw_label(im, top + width, left, label, rgb);
+                //orig
+                int width = im.h * .012;
+		        printf("In the old regulard overlay code\n");
+
+                if(0){
+                    width = pow(prob, 1./2.)*10+1;
+                    alphabet = 0;
+                }
+
+                printf("%s: %.0f%%\n", names[class], prob*100);
+                int offset = class*123457 % classes;
+                float red = get_color(2,offset,classes);
+                float green = get_color(1,offset,classes);
+                float blue = get_color(0,offset,classes);
+                float rgb[3];
+
+                //width = prob*20+2;
+
+                rgb[0] = red;
+                rgb[1] = green;
+                rgb[2] = blue;
+
+                int left  = (b.x-b.w/2.)*im.w;
+                int right = (b.x+b.w/2.)*im.w;
+                int top   = (b.y-b.h/2.)*im.h;
+                int bot   = (b.y+b.h/2.)*im.h;
+
+                if(left < 0) left = 0;
+                if(right > im.w-1) right = im.w-1;
+                if(top < 0) top = 0;
+                if(bot > im.h-1) bot = im.h-1;
+
+                draw_box_width(im, left, top, right, bot, width, red, green, blue);
+                if (alphabet) {
+                    image label = get_label(alphabet, names[class], (im.h*.03)/10);
+                    draw_label(im, top + width, left, label, rgb);
+                }
             }
         }
+    }
+
+    if((sockfd >= 0) && sendFUSION) {
+        packet.EOT = 1;
+        sendlen = write(sockfd, &packet, sizeof(obj_packet));
+        if(sendlen < sizeof(obj_packet)){
+            printf("sending failed\n");
+            commStop(0);
+        }
+        printf("End of detection boxes transmission... len(obj_packet)=%d", sendlen);
     }
 }
 
@@ -513,12 +704,73 @@ image load_image_cv(char *filename, int channels)
     return out;
 }
 
-image get_image_from_stream(CvCapture *cap)
+image get_image_from_stream(CvCapture *cap, int socketnum)
 {
-    IplImage* src = cvQueryFrame(cap);
-    if (!src) return make_empty_image(0,0,0);
-    image im = ipl_to_image(src);
-    rgbgr_image(im);
+    image im;
+    if(socketnum >= 0){ // new socket stuff
+    	int n, toread;
+    	int w = 1280;
+    	int h = 720;
+    	int c = 3;
+    	int cstep = w*h;
+    	im = make_image(w, h, c);
+    	int remaining = w*h*c;
+    	int i, j, k;
+    	unsigned char currentval;
+    	char buffer[4097];
+    	bzero(buffer, 4097);
+    	int buffercount = 0;
+    	n = read(socketnum, buffer, 4096);
+        for(i = 0; i < h; ++i){
+    	for(j = 0; j < w; ++j){
+    	for(k = 2; k>=0; --k){
+    		if (buffercount == n){
+    			remaining = remaining - n;
+    			buffercount = 0;
+    			bzero(buffer, n);
+    			if (remaining > 4096){
+    		        toread = 4096;
+    			} else {
+    			    toread = remaining;
+    			}
+    			n = read(socketnum, buffer, toread);
+    			if (n <0){
+    			    printf("ERROR reading from socket\n");
+    			    shutdown(socketnum,2);
+    			    close(socketnum);
+    			    exit(1);
+    			} else if (n==0){
+    				printf("connection freeze\n");
+    				usleep(10000); // 10 ms
+    				n = read(socketnum, buffer, toread);
+    				if (n <= 0){
+    					printf("still froze\n");
+    				    shutdown(socketnum,2);
+    				    close(socketnum);
+    				    exit(1);
+    				}
+    			}
+    		}
+    		currentval = (unsigned char) buffer[buffercount++];
+    	    im.data[k*cstep + i*w + j] = currentval/255.;
+        }
+    	}
+        }
+        if (remaining - buffercount > 3){
+            printf("remaining error\n");
+    	    shutdown(socketnum,2);
+    	    close(socketnum);
+    	    exit(1);
+        }
+        // n = write(socketnum, "ack", 3);
+        // if (n < 3){ printf("Err on ack"); shutdown(socketnum,2); close(socketnum); exit(1);}
+    } 
+    else {
+        IplImage* src = cvQueryFrame(cap);
+        if (!src) return make_empty_image(0,0,0);
+        im = ipl_to_image(src);
+        rgbgr_image(im);
+    }
     return im;
 }
 
