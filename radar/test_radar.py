@@ -8,7 +8,6 @@ from sys import platform
 import Visualization_RealTime  as FVis
 import pandas as pd
 import vis
-from radar_data import RadarData
 
 FPS = 5
 estimated_delay = .05 # expected length in seconds of each step
@@ -154,53 +153,15 @@ class ProcessProtector():
         if self.proc.is_alive(): self.proc.terminate()
         
 
-class Radar(Process):
-    def __init__(self, testFilename):
-        Process.__init__(self)
-        self.radarQueue = None
-        self.radarInterface = None
-        self.testFilename = testFilename
-
-    def start(self):
-        self.radarQueue = Queue()
-        self.radarInterface = RadarParser(self.radarQueue)
-        radarStartTime = time.time()
-        self.radarInterface.start(radarStartTime)
-        assert self.radarInterface.is_alive()
-        Process.start(self)
-
-    def run(self):
-        with  BasicLog("basic_details.txt") as basiclog ,\
-            open(self.testFilename, 'w') as logfile_pre ,\
-            ProcessProtector(radarInterface):
-            logfile_pre.write('time,track,range,angle,rangerate,latrate,power')
-            
-            basiclog.start(radarStartTime)
-                
-            while True:
-                time.sleep(1./FPS - estimated_delay)
-                while not radarQueue.empty():
-                    nextradarmessages = radarQueue.get()
-                    logfile_pre.write('\n'+array2str(nextradarmessages))
-
 if __name__ == '__main__':
-
     radarQueue = Queue()
-
-    visQueue = Queue()
     radarInterface = RadarParser(radarQueue)
-    # pandata = pd.DataFrame(columns=['time', 'track', 'range', 'angle', 'power'])
-    # pandata = RadarData()
-
-    # GFM = RadarGFM()
-    # p = Process(target=FVis.pipeline_radar, args=(visQueue,))
-    p = Process(target = vis.pipeline_radar, args=(radarQueue,))
+    p = Process(target = vis.pipeline_radar, args=(radarQueue,"test.csv",))
     p.start()
     with  BasicLog("basic_details.txt") as basiclog ,\
           open("radar_preGFM.txt", 'w') as logfile_pre ,\
           ProcessProtector(radarInterface):
         logfile_pre.write('time,track,range,angle,rangerate,latrate,power')
-        # logfile_post.write('time,range,angle')
             
         radarStartTime = time.time()
         radarInterface.start(radarStartTime)
@@ -208,33 +169,5 @@ if __name__ == '__main__':
         assert radarInterface.is_alive()
             
         while True:
-            time.sleep(1./FPS - estimated_delay)
-            ss = time.time()
-            
-            # while not radarQueue.empty():
-            #     # print "we got something"    
-            #     nextradarmessages = radarQueue.get()
-            #     print nextradarmessages
-            #     # for msg in nextradarmessages:
-            #     #     pandata = pandata.append({ 'time'  : msg[0],
-            #     #                      'track' : msg[1],
-            #     #                      'range' : msg[2],
-            #     #                      'angle' : msg[3],
-            #     #                      'power' : msg[6]}, ignore_index = True)
-            #     logfile_pre.write('\n'+array2str(nextradarmessages))
-                # print pandata
-            #     for nextmessage in nextradarmessages: GFM.update(nextmessage)
-            # t1 = time.time()
-            # dt1 = t1 - ss
-            # output = GFM.output(ss - radarStartTime)
-            # logfile_post.write('\n'+str(ss - radarStartTime))
-            # logfile_post.write('\n'+array2str(output))
-            # t2 = time.time()
-            # dt2 = t2-t1
-            
-            # #ret, frame = cap0.cap.read()
-            # t3 = time.time()
-            # dt3 = t3 - t2
-            # #videowriter.write(frame)
-            # dt4 = time.time() - t3
-            # #print "times {:.3f}, {:.3f}, {:.3f}, {:.3f}".format(dt1,dt2,dt3,dt4)
+            time.sleep(1)
+            assert radarInterface.is_alive()
