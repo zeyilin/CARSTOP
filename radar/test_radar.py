@@ -151,17 +151,40 @@ class ProcessProtector():
     def __enter__(self): pass
     def __exit__(self, errtype, errval, traceback):
         if self.proc.is_alive(): self.proc.terminate()
-        
+ 
+class Radar():
+    def __init__(self, filename):
+        self.radarQueue = None
+        self.radarBoxes = None
+        self.radarInterface = None
+        self.filename = filename
+
+
+    def init(self):
+        self.radarQueue = Queue()
+        self.radarBoxes = Queue()
+        self.radarInterface = RadarParser(self.radarQueue)
+        p = Process(target = vis.pipeline_radar, args=(self.radarQueue,self.filename,self.radarBoxes))
+        p.start()
+       
+        radarStartTime = time.time()
+        self.radarInterface.start(radarStartTime)
+        assert self.radarInterface.is_alive()
+
+    def get(self):
+        return self.radarBoxes.get()
+
+
+
 
 if __name__ == '__main__':
     radarQueue = Queue()
+    radarBoxes = Queue()
     radarInterface = RadarParser(radarQueue)
-    p = Process(target = vis.pipeline_radar, args=(radarQueue,"test.csv",))
+    p = Process(target = vis.pipeline_radar, args=(radarQueue,"test.csv",radarBoxes))
     p.start()
     with  BasicLog("basic_details.txt") as basiclog ,\
-          open("radar_preGFM.txt", 'w') as logfile_pre ,\
           ProcessProtector(radarInterface):
-        logfile_pre.write('time,track,range,angle,rangerate,latrate,power')
             
         radarStartTime = time.time()
         radarInterface.start(radarStartTime)
