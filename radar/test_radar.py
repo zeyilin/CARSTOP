@@ -1,25 +1,15 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-"""
-last mod 12/21/16
-"""
-
 from multiprocessing import Process, Queue
 import sys, time
-
 import canlib
 import numpy as np
-from radar_GFM import RadarGFM
-import cv2
-import matplotlib
-#matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.animation as manimation
-import Visualization_RealTime as FVis
 from sys import platform
+import Visualization_RealTime  as FVis
+import pandas as pd
+import vis
 
 FPS = 5
-cam_res = (1920, 1080) # (1280, 720) #
 estimated_delay = .05 # expected length in seconds of each step
 
 
@@ -72,7 +62,7 @@ class RadarParser(Process):
         msg_counter = 0 # Variable that keeps track of the iteration of msg 1344 we are on
         
         while True:
-            ss = time.time() - self.startTime
+            ss = time.time() # - self.startTime
             try:
                 msgId, msg, dlc, flg, msgtime = ch1.read()
 
@@ -131,77 +121,6 @@ class RadarParser(Process):
 # converts a 2D array to a csv string
 def array2str(array):
     return '\n'.join((','.join((str(ele) for ele in row)) for row in array))
-
-"""
-Saves video files using matplotlib - this is much slower than
-OpenCV's video code, but is the only code that currently works on Windows.
-
-class MPL_VideoWriter():
-    def __init__(self, filename, cam_res, fps):
-        figwidth = 10 # inches, must be a factor of frame width and height
-        fig = plt.figure(dpi = cam_res[0]/figwidth,
-                         figsize=(figwidth, cam_res[1]/float(cam_res[0])*figwidth))
-        ax = plt.Axes(fig, [0., 0., 1., 1.])
-        ax.set_axis_off()
-        fig.add_axes(ax)
-        self.aplt = plt.imshow(np.zeros((cam_res[1],cam_res[0],3),dtype=np.uint8)
-                            *255, aspect='equal',interpolation='none')
-        self.writer = manimation.FFMpegWriter(fps=fps, bitrate=250*fps)
-        self.writer.setup(fig, filename, fig.dpi)
-    def __enter__(self):
-        return self
-    def __exit__(self, errtype, errval, traceback):
-        self.writer.finish()
-        self.writer.cleanup()
-    def write(self, image):
-        self.aplt.set_data(image[:,:,::-1])
-        self.writer.grab_frame()
-"""
-
-
-""" Saves video files using OpenCV """
-class OCV_VideoWriter():
-    def __init__(self, filename, cam_res, fps):
-        if platform == 'linux' or platform == 'linux2':
-            codec = 'FMP4'
-            filename = filename[:-4]+'.avi'
-        else:
-            codec = 'MP4V'
-        if cv2.__version__[0] == '2':
-            fourcc = cv2.cv.CV_FOURCC(*codec)
-        else:
-            fourcc = cv2.VideoWriter_fourcc(*codec)
-        self.writer = cv2.VideoWriter(filename, fourcc, fps, cam_res)
-    def __enter__(self):
-        assert self.writer.isOpened()
-        return self
-    def __exit__(self, errtype, errval, traceback):
-        self.writer.release()
-    def write(self, image):
-        self.writer.write(image)
-        
-        
-""" Captures images directly from a camera using OpenCV """
-class VideoCapture():
-    def __init__(self, fps, cam_res):
-        self.cap = cv2.VideoCapture(0)
-        if cv2.__version__[0] == '2':
-            self.cap.set(cv2.cv.CV_CAP_PROP_FPS, fps)
-            self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH,cam_res[0])
-            self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT,cam_res[1])
-        else:
-            self.cap.set(cv2.CAP_PROP_FPS, fps)
-            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,cam_res[0])
-            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT,cam_res[1])
-    def __enter__(self):
-        ret, frame = self.cap.read()
-        assert ret
-        return self
-    def read(self):
-        ret, frame = self.cap.read()
-        return frame
-    def __exit__(self, errtype, errval, traceback):
-        self.cap.release()
     
 
 """ stores the starting time, ending time, and ending status for any test """
@@ -232,22 +151,38 @@ class ProcessProtector():
     def __enter__(self): pass
     def __exit__(self, errtype, errval, traceback):
         if self.proc.is_alive(): self.proc.terminate()
-        
-        
+ 
+class Radar():
+    def __init__(self, filename):
+        self.radarQueue = None
+        self.radarBoxes = None
+        self.radarInterface = None
+        self.filename = filename
+
+
+    def init(self):
+        self.radarQueue = Queue()
+        self.radarBoxes = Queue()
+        self.radarInterface = RadarParser(self.radarQueue)
+        p = Process(target = vis.pipeline_radar, args=(self.radarQueue,self.filename,self.radarBoxes))
+        p.start()
+       
+        radarStartTime = time.time()
+        self.radarInterface.start(radarStartTime)
+        assert self.radarInterface.is_alive()
+
+    def get(self):
+        return self.radarBoxes.get()
+
+
 if __name__ == '__main__':
     radarQueue = Queue()
-
-    visQueue = Queue()
-    radarInterface = RadarParser(visQueue)
-    GFM = RadarGFM()
-    p = Process(target=FVis.pipeline_radar, args=(visQueue,))
-    p.start()
+    radarBoxes = Queue()
+    radarInterface = RadarParser(radarQueue)
+    p = Process(target = vis.pipeline_radar, args=(radarQueue,"test.csv",radarBoxes))
+    # p.start()
     with  BasicLog("basic_details.txt") as basiclog ,\
-          open("radar_preGFM.txt", 'w') as logfile_pre ,\
-          open("radar_postGFM.txt", 'w') as logfile_post ,\
           ProcessProtector(radarInterface):
-        logfile_pre.write('time,track,range,angle,rangerate,latrate,power')
-        logfile_post.write('time,range,angle')
             
         radarStartTime = time.time()
         radarInterface.start(radarStartTime)
@@ -255,23 +190,6 @@ if __name__ == '__main__':
         assert radarInterface.is_alive()
             
         while True:
-            time.sleep(1./FPS - estimated_delay)
-            ss = time.time()
-            while not radarQueue.empty():
-                nextradarmessages = radarQueue.get()
-                logfile_pre.write('\n'+array2str(nextradarmessages))
-                for nextmessage in nextradarmessages: GFM.update(nextmessage)
-            t1 = time.time()
-            dt1 = t1 - ss
-            output = GFM.output(ss - radarStartTime)
-            logfile_post.write('\n'+str(ss - radarStartTime))
-            logfile_post.write('\n'+array2str(output))
-            t2 = time.time()
-            dt2 = t2-t1
-            
-            #ret, frame = cap0.cap.read()
-            t3 = time.time()
-            dt3 = t3 - t2
-            #videowriter.write(frame)
-            dt4 = time.time() - t3
-            #print "times {:.3f}, {:.3f}, {:.3f}, {:.3f}".format(dt1,dt2,dt3,dt4)
+            # time.sleep(1)
+            print radarQueue.get()
+            assert radarInterface.is_alive()
