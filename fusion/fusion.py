@@ -1,3 +1,15 @@
+#----------Set path for module import--------#
+import sys, os
+path = os.path.realpath(__file__)
+path, directory = os.path.split(path)
+path, directory = os.path.split(path)
+sys.path.append(path)
+#----------Set path for module import--------#
+
+import cv2, connectors, time
+from io import BytesIO
+from struct import unpack
+from radar.test_radar import Radar
 
 print_timing = True
 cam_res = (1280,720)
@@ -5,10 +17,6 @@ fps = 10 # frames per second
 IP = '127.0.0.1' #'192.168.0.138' #
 DESTPORT = 9002
 
-import cv2, connectors, time
-from io import BytesIO
-from struct import unpack
-from test_radar import Radar
 
 class Detected_Object():
     def __init__(self, packet):
@@ -131,4 +139,5 @@ def test_demo():
                 
 
 if __name__ == '__main__':
-    test_demo()
+    print "test"
+    # test_demo()
