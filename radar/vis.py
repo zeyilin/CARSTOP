@@ -102,7 +102,7 @@ def animate(data_slice, scatter,ax,boxes):
     else:
         filtered= []
     temp['filter'] = filtered
-    toPrint = pd.DataFrame(columns=['x','y', 'minx', 'miny', 'width', 'height', 'angle'])
+    toPrint = pd.DataFrame(columns=['x','y', 'minx', 'miny', 'width', 'height', 'angle', 'cluster_size'])
     for group in pd.Series(filtered).unique():
         if group>-1:
             subset = temp[temp['filter']==group]
@@ -120,7 +120,7 @@ def animate(data_slice, scatter,ax,boxes):
                                   minSubx, minSuby, 
                                   rotatedSubset['x'].max()-minSubx, 
                                   rotatedSubset['y'].max()-minSuby,
-                                  rotAngle)
+                                  rotAngle, len(subset))
     toRemove = []
     for box in boxes:
         try:
@@ -138,9 +138,14 @@ def animate(data_slice, scatter,ax,boxes):
         ax.add_patch(box)
     # scatter.set_offsets(np.vstack((temp['x'],temp['y'])).T)
     if len(toPrint)>0:
-        scatter.set_offsets(np.vstack((toPrint['x'],toPrint['y'])).T)
-        scatter.set_sizes(area)
-    scatter.set_color(colors)
+        comboPrint = pd.DataFrame(columns=['x','y', 'color', 'area'])
+        for index, row in toPrint.iterrows():
+            comboPrint.loc[index] = [row['x'], row['y'], 'r', row['cluster_size']*3]
+        for index, row in temp.iterrows():
+            comboPrint.loc[len(toPrint)+index] = [row['x'], row['y'], 'b', 6]
+        scatter.set_offsets(np.vstack((comboPrint['x'],comboPrint['y'])).T)
+        scatter.set_sizes(comboPrint['area'])
+        scatter.set_color(comboPrint['color'])
     plt.title("Current Time %f." % (time.time()-startTime))
     radarBoxes.put(toPrint)
     return scatter

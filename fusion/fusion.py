@@ -108,7 +108,7 @@ def test_send():
             time.sleep(.05)
 
 def test_demo():
-    cam = Camera(0)
+    cam = Camera(1)
 
     tx = connectors.ClientConnector(IP, DESTPORT, 'TCP')
     tx.s.settimeout(1)
@@ -135,9 +135,9 @@ def test_demo():
             print('Detected {} Objects'.format(len(objects)))
             cv2.imshow('frame', frame)
             cv2.waitKey(1)
+
             time.sleep(.05)
                 
 
 if __name__ == '__main__':
-    print "test"
-    # test_demo()
+    test_demo()
