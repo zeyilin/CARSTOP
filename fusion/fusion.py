@@ -8,6 +8,7 @@ DESTPORT = 9002
 import cv2, connectors, time
 from io import BytesIO
 from struct import unpack
+from test_radar import Radar
 
 class Detected_Object():
     def __init__(self, packet):
@@ -98,7 +99,7 @@ def test_send():
             io_obj.close()
             time.sleep(.05)
 
-def test_sendrecv():
+def test_demo():
     cam = Camera(0)
 
     tx = connectors.ClientConnector(IP, DESTPORT, 'TCP')
@@ -109,6 +110,9 @@ def test_sendrecv():
     io_obj = BytesIO(frame.flatten())
     tx.send(io_obj.getvalue())
     io_obj.close()
+
+    r = Radar("test.csv")
+    r.init()
 
     with tx, cam:
         while(True):
@@ -127,4 +131,4 @@ def test_sendrecv():
                 
 
 if __name__ == '__main__':
-    test_sendrecv()
+    test_demo()
