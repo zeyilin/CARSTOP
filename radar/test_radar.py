@@ -175,14 +175,12 @@ class Radar():
         return self.radarBoxes.get()
 
 
-
-
 if __name__ == '__main__':
     radarQueue = Queue()
     radarBoxes = Queue()
     radarInterface = RadarParser(radarQueue)
     p = Process(target = vis.pipeline_radar, args=(radarQueue,"test.csv",radarBoxes))
-    p.start()
+    # p.start()
     with  BasicLog("basic_details.txt") as basiclog ,\
           ProcessProtector(radarInterface):
             
@@ -192,5 +190,6 @@ if __name__ == '__main__':
         assert radarInterface.is_alive()
             
         while True:
-            time.sleep(1)
+            # time.sleep(1)
+            print radarQueue.get()
             assert radarInterface.is_alive()
