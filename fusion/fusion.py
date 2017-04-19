@@ -1,3 +1,15 @@
+#----------Set path for module import--------#
+import sys, os
+path = os.path.realpath(__file__)
+path, directory = os.path.split(path)
+path, directory = os.path.split(path)
+sys.path.append(path)
+#----------Set path for module import--------#
+
+import cv2, connectors, time
+from io import BytesIO
+from struct import unpack
+from radar.test_radar import Radar
 
 print_timing = True
 cam_res = (1280,720)
@@ -5,9 +17,6 @@ fps = 10 # frames per second
 IP = '127.0.0.1' #'192.168.0.138' #
 DESTPORT = 9002
 
-import cv2, connectors, time
-from io import BytesIO
-from struct import unpack
 
 class Detected_Object():
     def __init__(self, packet):
@@ -98,8 +107,8 @@ def test_send():
             io_obj.close()
             time.sleep(.05)
 
-def test_sendrecv():
-    cam = Camera(0)
+def test_demo():
+    cam = Camera(1)
 
     tx = connectors.ClientConnector(IP, DESTPORT, 'TCP')
     tx.s.settimeout(1)
@@ -109,6 +118,9 @@ def test_sendrecv():
     io_obj = BytesIO(frame.flatten())
     tx.send(io_obj.getvalue())
     io_obj.close()
+
+    r = Radar("test.csv")
+    r.init()
 
     with tx, cam:
         while(True):
@@ -123,8 +135,9 @@ def test_sendrecv():
             print('Detected {} Objects'.format(len(objects)))
             cv2.imshow('frame', frame)
             cv2.waitKey(1)
+
             time.sleep(.05)
                 
 
 if __name__ == '__main__':
-    test_sendrecv()
+    test_demo()

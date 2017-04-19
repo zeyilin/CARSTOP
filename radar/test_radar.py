@@ -180,7 +180,7 @@ if __name__ == '__main__':
     radarBoxes = Queue()
     radarInterface = RadarParser(radarQueue)
     p = Process(target = vis.pipeline_radar, args=(radarQueue,"test.csv",radarBoxes))
-    # p.start()
+    p.start()
     with  BasicLog("basic_details.txt") as basiclog ,\
           ProcessProtector(radarInterface):
             
