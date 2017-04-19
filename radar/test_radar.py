@@ -174,6 +174,9 @@ class Radar():
     def get(self):
         return self.radarBoxes.get()
 
+    def not_empty(self):
+        return not self.radarBoxes.empty()
+
 
 if __name__ == '__main__':
     radarQueue = Queue()

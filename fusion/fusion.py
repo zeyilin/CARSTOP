@@ -108,7 +108,7 @@ def test_send():
             time.sleep(.05)
 
 def test_demo():
-    cam = Camera(1)
+    cam = Camera(0)
 
     tx = connectors.ClientConnector(IP, DESTPORT, 'TCP')
     tx.s.settimeout(1)
@@ -121,10 +121,13 @@ def test_demo():
 
     r = Radar("test.csv")
     r.init()
-
+    thresh = .01
     with tx, cam:
         while(True):
             frame = cam.read()
+            radar_data = None
+            while r.not_empty():
+                radar_data = r.get()
 
             io_obj = BytesIO(frame.flatten())
             tx.send(io_obj.getvalue())
@@ -135,6 +138,29 @@ def test_demo():
             print('Detected {} Objects'.format(len(objects)))
             cv2.imshow('frame', frame)
             cv2.waitKey(1)
+            names = ['r' + str(n) for n in range(len(radar_data))]
+            scores = pd.DataFrame(columns=names)
+            for index in range(len(objects)):
+                box_scores = []
+                yolo_coords = (objects[index].x, objects[index].x + objects[index].w)
+                for ind, radar_box in radar_data.iterrows():
+                    sum_lengths = yolo_coords[1] - yolo_coords[0] - radar_box['left_pixel'] + radar_box['right_pixel']
+                    overlap = -max(yolo_coords[0], radar_box['left_pixel']) + min(yolo_coords[1], radar_box['right_pixel'])
+                    box_scores.append(overlap/sum_lengths)
+                scores.loc[index] = box_scores
+            matches = []
+            filtered_df = radar_data.copy()
+            for yolo_object in range(len(radar_data)):
+                best_score = None
+                best_score_coords = None
+                for i, row in scores.iterrows():
+                    if row.max() > best_score:
+                        best_score_coords = (i, row.idxmax())
+                if best_score < thresh:
+                    break
+                matches.append((yolo_object, best_score_coords[1]))
+                filtered_df.drop(best_score_coords[0], axis=0)
+                filtered_df.drop(best_score_coords[1], axis=1)
 
             time.sleep(.05)
                 

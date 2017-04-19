@@ -102,7 +102,7 @@ def animate(data_slice, scatter,ax,boxes):
     else:
         filtered= []
     temp['filter'] = filtered
-    toPrint = pd.DataFrame(columns=['x','y', 'minx', 'miny', 'width', 'height', 'angle', 'cluster_size'])
+    toPrint = pd.DataFrame(columns=['x','y', 'minx', 'miny', 'width', 'height', 'angle', 'cluster_size', 'left_pixel', 'right_pixel'])
     for group in pd.Series(filtered).unique():
         if group>-1:
             subset = temp[temp['filter']==group]
@@ -116,11 +116,23 @@ def animate(data_slice, scatter,ax,boxes):
             rotatedSubset = pd.DataFrame(rotatedSubset, columns=['x','y'])
             minSubx = rotatedSubset['x'].min()
             minSuby = rotatedSubset['y'].min()
+            width = rotatedSubset['x'].max()-minSubx
+            height = rotatedSubset['y'].max()-minSuby
+            alpha = [minSubx, minSuby + height]
+            beta = [minSubx + width, minSuby]
+            angle_points = np.matrix([alpha, beta])
+            anti_rotation_matrix = pd.DataFrame(columns=['a','b'])
+            anti_rotation_matrix.loc[0] = (math.cos(-math.radians(rotAngle)), math.sin(-math.radians(rotAngle)))
+            anti_rotation_matrix.loc[1] = (-math.sin(-math.radians(rotAngle)), math.cos(-math.radians(rotAngle)))
+            angle_points = np.matmul(angle_points, anti_rotation_matrix.as_matrix())
+            left_angle = np.arctan2(angle_points[0][0],angle_points[0][1])
+            right_angle = np.arctan2(angle_points[1][0],angle_points[1][1])
+            radius = 640.0/np.cos(np.radians(51))
+            left_pixel = np.sin(left_angle)*radius + 640
+            right_pixel = np.sin(right_angle)*radius + 640
             toPrint.loc[group] = (subset['x'].mean(), subset['y'].mean(), 
-                                  minSubx, minSuby, 
-                                  rotatedSubset['x'].max()-minSubx, 
-                                  rotatedSubset['y'].max()-minSuby,
-                                  rotAngle, len(subset))
+                                  minSubx, minSuby, width, height, rotAngle, 
+                                  len(subset),int(left_pixel), int(right_pixel))
     toRemove = []
     for box in boxes:
         try:

@@ -36,14 +36,14 @@ if __name__ == '__main__':
 
     hog = cv2.HOGDescriptor()
     hog.setSVMDetector( cv2.HOGDescriptor_getDefaultPeopleDetector() )
-    cap=cv2.VideoCapture('videos/video1.mov')
-    # cap=cv2.VideoCapture(0)
+    # cap=cv2.VideoCapture('videos/video1.mov')
+    cap=cv2.VideoCapture(1)
     print('STARTING')
     while True:
         ret,frame=cap.read()
+        if not ret: continue
         frame_width = frame.shape[1]
         frame_height = frame.shape[0]
-        if not ret: continue
         rects,w=hog.detectMultiScale(frame, winStride=(8,8), padding=(32,32), scale=1.05)
 
         #non-maximal suppression
