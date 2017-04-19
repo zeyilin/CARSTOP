@@ -130,21 +130,9 @@ def test_demo():
             tx.send(io_obj.getvalue())
             io_obj.close()
 
-            #acquiring the camera's detected objects
-            cam_objects = get_detected_objects_packets(tx)
-
-            #acquiring the radar's detected objects
-            rad_objects = r.get()
-
-            for object in cam_objects:
-                #convert the camera objects x pixels to angles
-
-                #search the radar objects for object that best matches the angle
-
-                #associate the radar object's distance with the camera object
-
-            draw_detected_objects(frame, cam_objects)
-            print('Detected {} Objects'.format(len(cam_objects)))
+            objects = get_detected_objects_packets(tx)
+            draw_detected_objects(frame, objects)
+            print('Detected {} Objects'.format(len(objects)))
             cv2.imshow('frame', frame)
             cv2.waitKey(1)
 
