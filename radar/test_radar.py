@@ -7,7 +7,7 @@ import numpy as np
 from sys import platform
 import Visualization_RealTime  as FVis
 import pandas as pd
-import vis
+import vis as vis
 
 FPS = 5
 estimated_delay = .05 # expected length in seconds of each step
@@ -194,5 +194,10 @@ if __name__ == '__main__':
             
         while True:
             # time.sleep(1)
-            print radarQueue.get()
+            #print radarQueue.get()
+            # while radarQueue.not_empty():
+            #     radar_data = radarQueue.get()
+            # for ind, radar_box in radar_data.iterrows():
+            #     print radar_box
             assert radarInterface.is_alive()
+    

@@ -13,7 +13,7 @@ import math
 from matplotlib import transforms
 
 
-delay = .3
+delay = .2
 offset = 0
 startTime = 0
 boxes = []
@@ -72,7 +72,7 @@ def pipeline_radar(radarData, filename, rbox):
                                      'range' : msg[2],
                                      'angle' : msg[3],
                                      'power' : msg[6]}, ignore_index = True)
-    print pandata
+    # print pandata
     nextFrame = RegrMagic(pandata)
     startTime = time.time()
     boxes = []
@@ -85,6 +85,7 @@ def frames():
         yield nextFrame(pandata)
 
 def animate(data_slice, scatter,ax,boxes):
+    start = time.time()
     # print(data_slice)
     global startTime, pandata, data, radarBoxes
     # print pandata.shape
@@ -98,41 +99,49 @@ def animate(data_slice, scatter,ax,boxes):
     temp['x'] = x
     temp['y'] = y
     if len(temp)>0:
-        filtered = DBSCAN(eps=3.0,min_samples=4).fit_predict(temp)
+        filtered = DBSCAN(eps=1.5,min_samples=3).fit_predict(temp)
     else:
         filtered= []
     temp['filter'] = filtered
     toPrint = pd.DataFrame(columns=['x','y', 'minx', 'miny', 'width', 'height', 'angle', 'cluster_size', 'left_pixel', 'right_pixel'])
+    # print('dbscan: ' + str(time.time()-start))
+    # start = time.time()
     for group in pd.Series(filtered).unique():
         if group>-1:
             subset = temp[temp['filter']==group]
-            linReg = LinearRegression().fit(subset['x'].reshape(-1,1),subset['y'])
+            linReg = LinearRegression().fit(subset['x'].values.reshape(-1,1),subset['y'])
             rotAngle = np.rad2deg(np.arctan2(linReg.coef_[0],1))
-            rotation_matrix = pd.DataFrame(columns=['a','b'])
-            rotation_matrix.loc[0] = (math.cos(-math.radians(rotAngle)), -math.sin(-math.radians(rotAngle)))
-            rotation_matrix.loc[1] = (math.sin(-math.radians(rotAngle)), math.cos(-math.radians(rotAngle)))
             
-            rotatedSubset = np.matmul(subset[['x','y']].as_matrix(),rotation_matrix.as_matrix())
-            rotatedSubset = pd.DataFrame(rotatedSubset, columns=['x','y'])
-            minSubx = rotatedSubset['x'].min()
-            minSuby = rotatedSubset['y'].min()
-            width = rotatedSubset['x'].max()-minSubx
-            height = rotatedSubset['y'].max()-minSuby
+            cos = math.cos(-math.radians(rotAngle))
+            sin = math.sin(-math.radians(rotAngle))
+            rotation_matrix = np.matrix([(cos, -sin),(sin, cos)])
+            # rotation_matrix.loc[0] = (cos, -sin)
+            # rotation_matrix.loc[1] = (sin, cos)
+            
+            rotatedSubset = np.matmul(subset[['x','y']].as_matrix(),rotation_matrix)
+            # rotatedSubset = pd.DataFrame(rotatedSubset, columns=['x','y'])
+
+            minSubx, minSuby = np.amin(rotatedSubset, axis=0).tolist()[0]
+            maxSubx, maxSuby = np.amax(rotatedSubset, axis=0).tolist()[0]
+            width = maxSubx-minSubx
+            height = maxSuby-minSuby
             alpha = [minSubx, minSuby + height]
             beta = [minSubx + width, minSuby]
             angle_points = np.matrix([alpha, beta])
             anti_rotation_matrix = pd.DataFrame(columns=['a','b'])
-            anti_rotation_matrix.loc[0] = (math.cos(-math.radians(rotAngle)), math.sin(-math.radians(rotAngle)))
-            anti_rotation_matrix.loc[1] = (-math.sin(-math.radians(rotAngle)), math.cos(-math.radians(rotAngle)))
+            anti_rotation_matrix.loc[0] = (cos, sin)
+            anti_rotation_matrix.loc[1] = (-sin, cos)
             angle_points = np.matmul(angle_points, anti_rotation_matrix.as_matrix())
-            left_angle = np.arctan2(angle_points[0][0],angle_points[0][1])
-            right_angle = np.arctan2(angle_points[1][0],angle_points[1][1])
+            left_angle = np.arctan2(angle_points[0,0],angle_points[0,1])
+            right_angle = np.arctan2(angle_points[1,0],angle_points[1,1])
             radius = 640.0/np.cos(np.radians(51))
             left_pixel = np.sin(left_angle)*radius + 640
             right_pixel = np.sin(right_angle)*radius + 640
             toPrint.loc[group] = (subset['x'].mean(), subset['y'].mean(), 
                                   minSubx, minSuby, width, height, rotAngle, 
                                   len(subset),int(left_pixel), int(right_pixel))
+    # print('rotation: ' + str(time.time()-start))
+    # start = time.time()
     toRemove = []
     for box in boxes:
         try:
@@ -148,16 +157,26 @@ def animate(data_slice, scatter,ax,boxes):
         box.set_transform(t)
         boxes.append(box)
         ax.add_patch(box)
-    # scatter.set_offsets(np.vstack((temp['x'],temp['y'])).T)
+    # print('box removal: ' + str(time.time()-start))
+    # start= time.time()
+    scatter.set_offsets(np.vstack((temp['x'],temp['y'])).T)
     if len(toPrint)>0:
         comboPrint = pd.DataFrame(columns=['x','y', 'color', 'area'])
-        for index, row in toPrint.iterrows():
-            comboPrint.loc[index] = [row['x'], row['y'], 'r', row['cluster_size']*3]
-        for index, row in temp.iterrows():
-            comboPrint.loc[len(toPrint)+index] = [row['x'], row['y'], 'b', 6]
+        toPrint['area'] = 3 * toPrint['cluster_size']
+        toPrint['color'] = ['r' for i in range(len(toPrint))]
+        temp['color'] = ['b' for i in range(len(temp))]
+        temp['area'] = area
+        comboPrint = pd.concat([temp[['x','y', 'color', 'area']], toPrint[['x','y', 'color', 'area']]])
+        # for index, row in toPrint.iterrows():
+        #     comboPrint.loc[index] = [row['x'], row['y'], 'r', row['cluster_size']*3]
+        # for index, row in temp.iterrows():
+        #     comboPrint.loc[len(toPrint)+index] = [row['x'], row['y'], 'b', 6]
+        # print("Setting the offsets")
+        # print(len(comboPrint))
         scatter.set_offsets(np.vstack((comboPrint['x'],comboPrint['y'])).T)
         scatter.set_sizes(comboPrint['area'])
         scatter.set_color(comboPrint['color'])
+    # print("end: " + str(time.time()-start))
     plt.title("Current Time %f." % (time.time()-startTime))
     radarBoxes.put(toPrint)
     return scatter

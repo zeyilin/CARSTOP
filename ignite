@@ -1,9 +1,20 @@
 #!/bin/bash
+
+# Kill all instances of Python
+pkill python
+
+# Disable webcam autofocus
+echo "Disabling C920 webcam autofocus"
+v4l2-ctl -d 1 -c focus_auto=0
+
+# Start Darknet
 echo "Starting Darknet via bash command"
 cd vision/darknet
 ./darknet detector demo cfg/coco.data cfg/yolo.cfg yolo.weights &
 echo "Waiting for Darknet to init"
 sleep 6
+
+# FUSION!!!! IGNITE!!!
 echo "Start fusion algorithm"
 cd ../..
 python fusion/fusion.py
